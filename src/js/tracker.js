@@ -82,6 +82,7 @@
 	 * 20. discoverRootDomain, false
 	 * 21. cookieLifetime, 63072000
 	 * 22. stateStorageStrategy, 'cookie'
+	 * 23. respectOptOutCookie, false
 	 */
 	object.Tracker = function Tracker(functionName, namespace, version, mutSnowplowState, argmap) {
 
@@ -159,6 +160,9 @@
 
 			// Do Not Track
 			configDoNotTrack = argmap.hasOwnProperty('respectDoNotTrack') ? argmap.respectDoNotTrack && (dnt === 'yes' || dnt === '1') : false,
+
+			// Opt out of cookie tracking
+			configOptOutCookie,
 
 			// Count sites which are pre-rendered
 			configCountPreRendered,
@@ -434,7 +438,7 @@
 		function sendRequest(request, delay) {
 			var now = new Date();
 
-			if (!configDoNotTrack) {
+			if (!(configDoNotTrack || !!getSnowplowCookieValue(configOptOutCookie))) {
 				outQueueManager.enqueueRequest(request.build(), configCollectorUrl);
 				mutSnowplowState.expireDateTime = now.getTime() + delay;
 			}
@@ -681,7 +685,8 @@
 				lastVisitTs = id[5],
 				sessionIdFromCookie = id[6];
 
-			if (configDoNotTrack && configStateStorageStrategy != 'none') {
+			if ((configDoNotTrack || !!getSnowplowCookieValue(configOptOutCookie)) &&
+					configStateStorageStrategy != 'none') {
 				if (configStateStorageStrategy == 'localStorage') {
 					helpers.attemptWriteLocalStorage(idname, '');
 					helpers.attemptWriteLocalStorage(sesName, '');
@@ -1807,6 +1812,16 @@
 				if (windowAlias.location.protocol === 'file:') {
 					windowAlias.location = url;
 				}
+			},
+
+			/**
+			 * Sets the opt out cookie.
+			 *
+			 * @param string name of the opt out cookie
+			 */
+			setOptOutCookie: function (name) {
+				configOptOutCookie = name;
+				setCookie(name, '*', 1800);
 			},
 
 			/**
