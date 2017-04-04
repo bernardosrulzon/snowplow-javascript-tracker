@@ -185,7 +185,11 @@
 			useLocalStorage = argmap.hasOwnProperty('useLocalStorage') ? argmap.useLocalStorage : true,
 
 			// Whether to use cookies
-			configUseCookies = argmap.hasOwnProperty('useCookies') ? argmap.useCookies : true,
+			configUseCookies = argmap.hasOwnProperty('useCookies') ? (
+				helpers.warn(
+					'argmap.useCookies is deprecated. Use argmap.stateStorageStrategy instead.'),
+				argmap.useCookies
+			) : true,
 
 			// Strategy defining how to store the state: cookie, localStorage or none
 			configStateStorageStrategy = argmap.hasOwnProperty('stateStorageStrategy') ?
@@ -195,7 +199,8 @@
 			browserLanguage = navigatorAlias.userLanguage || navigatorAlias.language,
 
 			// Browser features via client-side data collection
-			browserFeatures = detectors.detectBrowserFeatures(configUseCookies, getSnowplowCookieName('testcookie')),
+			browserFeatures = detectors.detectBrowserFeatures(
+				configStateStorageStrategy == 'cookie', getSnowplowCookieName('testcookie')),
 
 			// Visitor fingerprint
 			userFingerprint = (argmap.userFingerprint === false) ? '' : detectors.detectSignature(configUserFingerprintHashSeed),
@@ -583,7 +588,8 @@
 		 * Set the cookies (if cookies are enabled)
 		 */
 		function initializeIdsAndCookies() {
-			var sesCookieSet = configUseCookies && !!getSnowplowCookieValue('ses');
+			var sesCookieSet =
+				configStateStorageStrategy != 'none' && !!getSnowplowCookieValue('ses');
 			var idCookieComponents = loadDomainUserIdCookie();
 
 			if (idCookieComponents[1]) {
@@ -605,7 +611,7 @@
 				idCookieComponents[5] = idCookieComponents[4];
 			}
 
-			if (configUseCookies) {
+			if (configStateStorageStrategy != 'none') {
 				setSessionCookie();
 				// Update currentVisitTs
 				idCookieComponents[4] = Math.round(new Date().getTime() / 1000);
@@ -618,7 +624,7 @@
 		 * Load visitor ID cookie
 		 */
 		function loadDomainUserIdCookie() {
-			if (!configUseCookies) {
+			if (configStateStorageStrategy == 'none') {
 				return [];
 			}
 			var now = new Date(),
@@ -675,7 +681,7 @@
 				lastVisitTs = id[5],
 				sessionIdFromCookie = id[6];
 
-			if (configDoNotTrack && configUseCookies) {
+			if (configDoNotTrack && configStateStorageStrategy != 'none') {
 				if (configStateStorageStrategy == 'localStorage') {
 					helpers.attemptWriteLocalStorage(idname, '');
 					helpers.attemptWriteLocalStorage(sesName, '');
@@ -691,7 +697,7 @@
 				memorizedSessionId = sessionIdFromCookie;
 
 				// New session?
-				if (!ses && configUseCookies) {
+				if (!ses && configStateStorageStrategy != 'none') {
 					// New session (aka new visit)
 					visitCount++;
 					// Update the last visit timestamp
@@ -727,7 +733,7 @@
 			sb.add('url', purify(configCustomUrl || locationHrefAlias));
 
 			// Update cookies
-			if (configUseCookies) {
+			if (configStateStorageStrategy != 'none') {
 				setDomainUserIdCookie(_domainUserId, createTs, memorizedVisitCount, nowTs,
 					lastVisitTs, memorizedSessionId);
 				setSessionCookie();
