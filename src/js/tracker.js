@@ -1573,6 +1573,15 @@
 		return {
 
 			/**
+			 * Get the domain session index also known as current memorized visit count.
+			 *
+			 * @return int Domain session index
+			 */
+			getDomainSessionIndex: function() {
+				return memorizedVisitCount;
+			},
+
+			/**
 			 * Get the page view ID as generated or provided by mutSnowplowState.pageViewId.
 			 *
 			 * @return string Page view ID
