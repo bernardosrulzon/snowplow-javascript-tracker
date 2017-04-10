@@ -138,6 +138,9 @@
 			// Maximum delay to wait for web bug image to be fetched (in milliseconds)
 			configTrackerPause = argmap.hasOwnProperty('pageUnloadTimer') ? argmap.pageUnloadTimer : 500,
 
+			// Whether appropriate values have been supplied to enableActivityTracking
+			activityTrackingEnabled = false,
+
 			// Minimum visit time after initial page view (in milliseconds)
 			configMinimumVisitTime,
 
@@ -1389,7 +1392,7 @@
 			
 			// Send ping (to log that user has stayed on page)
 			var now = new Date();
-			if (configMinimumVisitTime && configHeartBeatTimer && !activityTrackingInstalled) {
+			if (activityTrackingEnabled && !activityTrackingInstalled) {
 				activityTrackingInstalled = true;
 
 				// Capture our initial scroll points
@@ -1833,8 +1836,15 @@
 			 * @param int heartBeatDelay Seconds to wait between pings
 			 */
 			enableActivityTracking: function (minimumVisitLength, heartBeatDelay) {
-				configMinimumVisitTime = new Date().getTime() + minimumVisitLength * 1000;
-				configHeartBeatTimer = heartBeatDelay * 1000;
+				if (minimumVisitLength === parseInt(minimumVisitLength, 10) &&
+						heartBeatDelay === parseInt(heartBeatDelay, 10)) {
+					activityTrackingEnabled = true;
+					configMinimumVisitTime = new Date().getTime() + minimumVisitLength * 1000;
+					configHeartBeatTimer = heartBeatDelay * 1000;
+				} else {
+					helpers.warn("Activity tracking not enabled, please provide integer values " +
+						"for minimumVisitLength and heartBeatDelay.")
+				}
 			},
 
 			/**
